@@ -1,0 +1,26 @@
+Problem 1. Stu makes the Merkle path in the withdraw circuit a public input because anyone can compute paths from public commitments. 
+What’s the problem?
+
+Solution: The Merkle path is not only responsible for proving membership, but it alsoidentifies which specific leaf is being spent.
+If the path is set to public, the Merkle path can be recomputed by an observer from each on-chain deposit commitment to the root
+ and then compared to the public path. When the match is found, they will be able to figure out the exact commitment this withdrawal 
+ corresponds to.
+
+Hence, it destroys the mixer’s anonymity, i.e., instead of “some deposit in this tree is being spent,” the withdrawal is now vulnerable 
+to being linkable to one unique deposit. If the path is kept private, it allows the verifier to check membership inside the ZK proof 
+while keeping which deposit in the tree is being spent in hidden state.
+
+*******************
+
+Problem 2. Stu removes the Merkle path and only proves commitment = PedersenHash(id, r). Why is this insecure?
+
+Solution: The Merkle path keeps the withdrawals tied to the actual deposits stored in the mixer’s Merkle tree.
+ Without the merkle path the circuit never checks that commitment actually exists in the tree or not.
+Any random id and r can be chosen by the attacker and they can compute the commitment (PedersenHash(id, r)), and produce a valid 
+proof saying “this commitment equals PedersenHash(id, r)”, even though that commitment was never deposited. 
+If the contract starts accepting such proofs and sends 0.1 ETH, the attacker has the possibility of minting withdrawals from thin 
+air and thereby draining the mixer.
+
+Thus, removal of the Merkle path breaks the safety protocol that every withdrawal must correspond to some prior deposit in the tree.
+
+*******************
